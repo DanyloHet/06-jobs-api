@@ -35,11 +35,13 @@ import { handleRegister } from "./register.js";
 document.addEventListener("DOMContentLoaded", () => {
   token = localStorage.getItem("token");
   message = document.getElementById("message");
+
   handleLoginRegister();
   handleLogin();
   handleJobs();
   handleRegister();
   handleAddEdit();
+
   if (token) {
     showJobs();
   } else {

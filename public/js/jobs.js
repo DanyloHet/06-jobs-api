@@ -20,22 +20,45 @@ export const handleJobs = () => {
   jobsTable = document.getElementById("jobs-table");
   jobsTableHeader = document.getElementById("jobs-table-header");
 
-  jobsDiv.addEventListener("click", (e) => {
+  jobsDiv.addEventListener("click", async (e) => {
     if (inputEnabled && e.target.nodeName === "BUTTON") {
       if (e.target === addJob) {
         showAddEdit(null);
       } else if (e.target === logoff) {
         setToken(null);
-
         message.textContent = "You have been logged off.";
-
         jobsTable.replaceChildren([jobsTableHeader]);
-
         showLoginRegister();
-      }
-      else if (e.target.classList.contains("editButton")) {
+      } else if (e.target.classList.contains("editButton")) {
         message.textContent = "";
         showAddEdit(e.target.dataset.id);
+      } else if (e.target.classList.contains("deleteButton")) {
+        const jobId = e.target.dataset.id;
+        if (!jobId) return;
+
+        try {
+          enableInput(false);
+          const response = await fetch(`/api/v1/jobs/${jobId}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (response.status === 200) {
+            message.textContent = "Job deleted.";
+            showJobs();
+          } else {
+            message.textContent = data.msg || "Delete failed.";
+          }
+        } catch (err) {
+          console.error(err);
+          message.textContent = "A communication error occurred.";
+        }
+        enableInput(true);
       }
     }
   });
@@ -58,20 +81,22 @@ export const showJobs = async () => {
 
     if (response.status === 200) {
       if (data.count === 0) {
-        jobsTable.replaceChildren(...children); // clear this for safety
+        jobsTable.replaceChildren(...children);
       } else {
         for (let i = 0; i < data.jobs.length; i++) {
           let rowEntry = document.createElement("tr");
 
-          let editButton = `<td><button type="button" class="editButton" data-id=${data.jobs[i]._id}>edit</button></td>`;
-          let deleteButton = `<td><button type="button" class="deleteButton" data-id=${data.jobs[i]._id}>delete</button></td>`;
-          let rowHTML = `
+          let editButton = `<button type="button" class="editButton" data-id="${data.jobs[i]._id}">edit</button>`;
+          let deleteButton = `<button type="button" class="deleteButton" data-id="${data.jobs[i]._id}">delete</button>`;
+          
+          rowEntry.innerHTML = `
             <td>${data.jobs[i].company}</td>
             <td>${data.jobs[i].position}</td>
             <td>${data.jobs[i].status}</td>
-            <div>${editButton}${deleteButton}</div>`;
+            <td>${editButton}</td>
+            <td>${deleteButton}</td>
+          `;
 
-          rowEntry.innerHTML = rowHTML;
           children.push(rowEntry);
         }
         jobsTable.replaceChildren(...children);
